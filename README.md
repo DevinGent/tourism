@@ -1,5 +1,5 @@
-# Tourism
-
+# Covid and Tourism
+In this project we will examine the influence the Covid pandemic had on global tourism.
 
 ## Content Overview
 ### `eda.py`
