@@ -99,3 +99,77 @@ nation_df['Rank']=nation_df['Average length of stay'].rank(method='min',ascendin
 print(nation_df)
 nation_df.info()
 print(nation_df.sort_values('Rank'))
+
+gdp_df=pd.read_csv(r'data\7- tourism-gdp-proportion-of-total-gdp.csv')
+print(gdp_df)
+gdp_df.info()
+
+plt.figure(figsize=(12,6))
+sns.lineplot(gdp_df[gdp_df['Entity']=='World'], x='Year',y="Tourism GDP as a proportion of Total")
+plt.show()
+
+plt.figure(figsize=(12,6))
+plt.subplot(1,2,1)
+sns.histplot(gdp_df, x="Tourism GDP as a proportion of Total")
+plt.subplot(1,2,2)
+sns.kdeplot(gdp_df, x="Tourism GDP as a proportion of Total")
+plt.suptitle("Across all years")
+plt.show()
+
+# We will do the same for the set of data before 2020 and after. First we split our dataframe into two parts.
+post20=gdp_df[gdp_df['Year']>2019]
+pre20=gdp_df[gdp_df['Year']<2020]
+# We will create a figure with 4 plots, sharing x axes.
+fig, axs=plt.subplots(nrows=2,ncols=2,figsize=(12,6), sharex=True)
+sns.histplot(pre20, x="Tourism GDP as a proportion of Total", ax=axs[0][0])
+sns.histplot(post20, x="Tourism GDP as a proportion of Total", ax=axs[1][0])
+sns.kdeplot(pre20, x="Tourism GDP as a proportion of Total",ax=axs[0][1])
+sns.kdeplot(post20, x="Tourism GDP as a proportion of Total",ax=axs[1][1])
+plt.suptitle("Before and after 2019")
+# We will add an annotation for each row to differentiate before and after 2020.
+ax=axs[:,0][0]
+ax.annotate("2019 and earlier", xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - 5, 0),
+                xycoords=ax.yaxis.label, textcoords='offset points',
+                size='large', ha='right', va='center')
+ax=axs[:,0][1]
+ax.annotate("Post 2019", xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - 5, 0),
+                xycoords=ax.yaxis.label, textcoords='offset points',
+                size='large', ha='right', va='center')
+fig.tight_layout()
+plt.show()
+
+# We will also look at box plots for the entire dataset:
+plt.figure(figsize=(6,7))
+sns.boxplot([gdp_df["Tourism GDP as a proportion of Total"],
+             pre20["Tourism GDP as a proportion of Total"],
+             post20["Tourism GDP as a proportion of Total"]])
+plt.gca().set_xticklabels(['All years', '2019 and earlier', 'Post 2019'])
+plt.gca().set_ylabel("Tourism GDP as a proportion of Total")
+plt.show()
+
+plt.figure(figsize=(8,6))
+plt.scatter(data=gdp_df,x='Year',y="Tourism GDP as a proportion of Total")
+plt.show()
+
+# These graphs show that, after 2019, there are no longer countries with especially large proportions remaining.  
+# Let us investigate this further by looking for countries which had over 15% of their GDP come from tourism at some point in time.
+high_tourism=gdp_df[gdp_df['Tourism GDP as a proportion of Total']>15]
+print(high_tourism)
+high_tourism_nations=high_tourism['Entity'].unique()
+print(high_tourism_nations)
+print(gdp_df[gdp_df['Entity'].isin(high_tourism_nations)])
+# The dataframe is missing enough information on these nations, with only Oceania, Guam, and Macao having data for years after 2019.
+# Still, we can see a massive fall in all of these countries from 2019 to 2020:
+
+plt.figure(figsize=(8,6))
+sns.lineplot(data=gdp_df[gdp_df['Entity'].isin(['Oceania excluding Australia and New Zealand',
+                                                'Macao',
+                                                'Guam'])],x='Year',y="Tourism GDP as a proportion of Total", hue='Entity')
+plt.show()
+print("Between 2019 and 2020 we find that:")
+for (place,shortplace) in zip(['Oceania excluding Australia and New Zealand','Macao','Guam'],
+                              ['Oceania','Macao','Guam']):
+    gdp2019=gdp_df[(gdp_df['Entity']==place)&(gdp_df['Year']==2019)]['Tourism GDP as a proportion of Total'].values[0]
+    gdp2020=gdp_df[(gdp_df['Entity']==place)&(gdp_df['Year']==2020)]['Tourism GDP as a proportion of Total'].values[0]
+    print(shortplace,"fell from {} to {}, a difference of {}.".format(gdp2019,gdp2020,gdp2019-gdp2020))
+# In each case the drop is by more than half.
