@@ -52,6 +52,8 @@ plt.show()
 
 plt.figure(figsize=(8,6))
 plt.scatter(data=df,x='Year',y='Average length of stay')
+plt.xlabel("Year")
+plt.ylabel("Average length of stay")
 plt.show()
 
 # We will select 6 countries at random and graph the length of stay by year.
@@ -100,12 +102,15 @@ print(nation_df)
 nation_df.info()
 print(nation_df.sort_values('Rank'))
 
+
+# Now let us examine the gdp dataset.
 gdp_df=pd.read_csv(r'data\7- tourism-gdp-proportion-of-total-gdp.csv')
 print(gdp_df)
 gdp_df.info()
 
 plt.figure(figsize=(12,6))
 sns.lineplot(gdp_df[gdp_df['Entity']=='World'], x='Year',y="Tourism GDP as a proportion of Total")
+plt.title("Worldwide Tourism")
 plt.show()
 
 plt.figure(figsize=(12,6))
@@ -149,6 +154,8 @@ plt.show()
 
 plt.figure(figsize=(8,6))
 plt.scatter(data=gdp_df,x='Year',y="Tourism GDP as a proportion of Total")
+plt.xlabel("Year")
+plt.ylabel("Tourism GDP as a proportion of Total")
 plt.show()
 
 # These graphs show that, after 2019, there are no longer countries with especially large proportions remaining.  
@@ -173,3 +180,46 @@ for (place,shortplace) in zip(['Oceania excluding Australia and New Zealand','Ma
     gdp2020=gdp_df[(gdp_df['Entity']==place)&(gdp_df['Year']==2020)]['Tourism GDP as a proportion of Total'].values[0]
     print(shortplace,"fell from {} to {}, a difference of {}.".format(gdp2019,gdp2020,gdp2019-gdp2020))
 # In each case the drop is by more than half.
+
+# More generally, let us look at what kind of drops happened post-covid.
+
+# Let us calculate the change from the previous year (and the percentage change) in Tourism GDP.
+def calculate_change(row):
+    """This function takes a row from the dataframe gdp_df and calculates the 
+    change in tourism from the previous year, as well as what percent of the previous year that change constitutes."""
+    no_previous=False
+    second_gdp=row['Tourism GDP as a proportion of Total']
+    try:
+        first_gdp=gdp_df[(gdp_df['Year']==row['Year']-1)&
+                         (gdp_df['Entity']==row['Entity'])]['Tourism GDP as a proportion of Total'].values[0]
+    except:
+        no_previous=True
+    if no_previous==True:
+        change=np.nan
+        change_pct=np.nan
+    else:
+        change=second_gdp-first_gdp
+        change_pct=100*change/first_gdp
+    return [change,change_pct]
+
+gdp_df[['Change from Previous Year','Percent Change from Previous Year']]=gdp_df.apply(calculate_change,axis=1, result_type='expand')
+
+print(gdp_df)
+print(gdp_df.iloc[1])
+print(calculate_change(gdp_df.iloc[1]))
+
+year_averages=gdp_df.groupby('Year')[['Tourism GDP as a proportion of Total',
+                                      'Change from Previous Year',
+                                      'Percent Change from Previous Year']].mean()
+print(year_averages)
+
+print(gdp_df.corr(numeric_only=True))
+
+# Let us examine which countries had the largest tourism GDP (as a proportion of total) in a five year period before covid.
+
+precovid_averages=gdp_df[gdp_df['Year'].isin([2015,2016,2017,2018,2019])].groupby('Entity')[['Tourism GDP as a proportion of Total',                                     
+                                                                                            'Change from Previous Year',
+                                                                                            'Percent Change from Previous Year']].mean()
+
+print(precovid_averages.sort_values('Tourism GDP as a proportion of Total'))
+
