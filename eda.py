@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib_venn import venn3
 
 # To make the code reproducible we set the seed.
 random.seed(10)
@@ -208,18 +209,68 @@ print(gdp_df)
 print(gdp_df.iloc[1])
 print(calculate_change(gdp_df.iloc[1]))
 
+# Let us calculate the averages in each factor by year across the countries.
 year_averages=gdp_df.groupby('Year')[['Tourism GDP as a proportion of Total',
                                       'Change from Previous Year',
                                       'Percent Change from Previous Year']].mean()
 print(year_averages)
 
+# We will check if these categories are correlated.
 print(gdp_df.corr(numeric_only=True))
+# There does not seem to be significant correlation.
+
 
 # Let us examine which countries had the largest tourism GDP (as a proportion of total) in a five year period before covid.
-
 precovid_averages=gdp_df[gdp_df['Year'].isin([2015,2016,2017,2018,2019])].groupby('Entity')[['Tourism GDP as a proportion of Total',                                     
                                                                                             'Change from Previous Year',
                                                                                             'Percent Change from Previous Year']].mean()
 
 print(precovid_averages.sort_values('Tourism GDP as a proportion of Total'))
 
+# We will examine the set of countries with the highest (proportional) GDP and those with the lowest.
+print(precovid_averages.sort_values('Tourism GDP as a proportion of Total').index)
+top30_gdp=precovid_averages.sort_values('Tourism GDP as a proportion of Total').tail(30).index.tolist()
+print("The 30 countries with the highest proportional GDPs shortly before Covid were:")
+print(top30_gdp)
+bottom_30gdp=precovid_averages.sort_values('Tourism GDP as a proportion of Total').head(30).index.tolist()
+print("The 30 countries with the lowest proportional GDPs shortly before Covid were:")
+print(bottom_30gdp)
+
+# We will also look at which countries suffered the most significant (percentage) drop in 2020.
+print(gdp_df[gdp_df['Year']==2020].dropna(subset=['Percent Change from Previous Year']).sort_values('Percent Change from Previous Year'))
+biggest_drop2020=gdp_df[gdp_df['Year']==2020].dropna(subset=
+                                                     ['Percent Change from Previous Year']).sort_values('Percent Change from Previous Year')['Entity'].head(30)
+
+smallest_drop2020=gdp_df[gdp_df['Year']==2020].dropna(subset=
+                                                     ['Percent Change from Previous Year']).sort_values('Percent Change from Previous Year')['Entity'].tail(30)
+biggest_drop2020=biggest_drop2020.tolist()
+smallest_drop2020=smallest_drop2020.tolist()
+print("The countries with the largest percentage drop in proportional GDP were:")
+print(biggest_drop2020)
+print("The countries with the smallest percentage drop in proportional GDP were:")
+print(smallest_drop2020)
+
+vd=venn3([set(top30_gdp),set(bottom_30gdp),set(biggest_drop2020)],('Highest GDP (pre-Covid)','Lowest GDP (pre-Covid)','Largest Drop (post-Covid)'))
+lbl = vd.get_label_by_id("C")
+x, y = lbl.get_position()
+lbl.set_position((x, y+.9))
+plt.show()
+
+# It seems that whole regions are listed as well. Let us see if this is true.
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    print(gdp_df.value_counts('Entity'))
+# It is. Let us make a list of the regional entities.
+print(gdp_df.loc[gdp_df['Code'].isnull()]['Entity'].unique())
+regions=gdp_df.loc[gdp_df['Code'].isnull()]['Entity'].unique().tolist()
+regions.append('World')
+print(regions)
+regional_gdp=gdp_df[gdp_df['Entity'].isin(regions)]
+regional_gdp.drop(columns=['Code'], inplace=True)
+print(regional_gdp)
+
+plt.figure(figsize=(12,6))
+sns.lineplot(data=regional_gdp,x='Year',y='Tourism GDP as a proportion of Total',hue='Entity')
+plt.show()
+print(regional_gdp[regional_gdp['Year'].isin([2019,2020])].drop(columns=['Change from Previous Year']))
+# It seems that Latin America and the Caribbean sustained far less relative loss in GDP because of Covid than other regions.
+# Central and Southern Asia sustained the most significant loss.
